@@ -9,6 +9,11 @@ export struct Message {
     color: color,
 }
 
+export global ChatState {
+    in-out property <[Message]> messages: [];
+    callback send_message(string);
+}
+
 export component ChatMessage inherits Rectangle {
     in property <Message> data;
 
@@ -45,8 +50,6 @@ component ChatInput inherits Rectangle {
     border-width: 1px;
     border-color: skyblue;
 
-    callback send_message(string);
-
     HorizontalLayout {
         padding: 4px;
         spacing: 8px;
@@ -59,7 +62,7 @@ component ChatInput inherits Rectangle {
                 vertical-alignment: center;
                 single-line: true;
                 accepted => {
-                    root.send_message(self.text);
+                    ChatState.send_message(self.text);
                     self.text = ""
                 }
             }
@@ -80,6 +83,21 @@ component ChatInput inherits Rectangle {
             width: 80px;
             clicked => {
                 input.accepted();
+            }
+        }
+    }
+}
+
+export component ChatMessages inherits Rectangle {
+    border-color: skyblue;
+    border-width: 1px;
+    vertical-stretch: 1;
+    ScrollView {
+        VerticalLayout {
+            alignment: start;
+            padding: 4px;
+            for message[i] in ChatState.messages: ChatMessage {
+                data: message;
             }
         }
     }
@@ -110,26 +128,7 @@ export component ChatView inherits VerticalLayout {
         },
     ];
 
-    Rectangle {
-        border-color: skyblue;
-        border-width: 1px;
-        vertical-stretch: 1;
-        ScrollView {
-            VerticalLayout {
-                alignment: start;
-                padding: 4px;
-                for message[i] in messages: ChatMessage {
-                    data: message;
-                }
-            }
-        }
-    }
+    ChatMessages { }
 
-    ChatInput {
-        send_message(text) => {
-            if (text != "") {
-                root.send_message(text);
-            }
-        }
-    }
+    ChatInput { }
 }

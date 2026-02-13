@@ -1,8 +1,8 @@
-use crate::Message;
+use crate::{AppWindow, ChatState, Message};
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
-use slint::{Color, SharedString, VecModel};
-use std::fs;
+use slint::{Color, ComponentHandle, Model, SharedString, VecModel};
+use std::{fs, rc::Rc};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct MessageData {
@@ -14,15 +14,47 @@ pub struct MessageData {
     timestamp: String,
 }
 
-#[derive(Debug)]
 pub struct ChatView {
-    // messages: Vec<Message>,
+    messages: Rc<VecModel<Message>>,
 }
 
 impl ChatView {
-    // pub fn new(messages: Vec<Message>) -> Self {
-    //     Self { messages }
-    // }
+    pub fn new(app: &AppWindow) -> Self {
+        let chatvew_global = app.global::<ChatState>();
+        let message_model = Rc::new(slint::VecModel::<Message>::default());
+
+        let messages: VecModel<Message> =
+            ChatView::read_messages("data/message.json".to_string()).unwrap();
+
+        for msg in messages.iter() {
+            message_model.push(msg);
+        }
+
+        chatvew_global.set_messages(message_model.clone().into());
+
+        let controller = Self {
+            messages: message_model,
+        };
+        controller.init_callbacks(&app);
+
+        controller
+    }
+
+    fn init_callbacks(&self, app: &AppWindow) {
+        let chatvew_global = app.global::<ChatState>();
+        let message_model = self.messages.clone();
+
+        chatvew_global.on_send_message(move |text| {
+            let new_msg = Message {
+                id: "id".into(),
+                timestamp: "14:20".into(),
+                name: "You".into(),
+                message: text,
+                color: Color::from_rgb_u8(100, 200, 255),
+            };
+            message_model.push(new_msg);
+        });
+    }
 
     pub fn timestamp() -> String {
         Utc::now().format("%d/%m/%Y %H:%M").to_string()
