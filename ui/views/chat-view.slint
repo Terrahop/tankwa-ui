@@ -1,0 +1,135 @@
+import { Button, ScrollView } from "std-widgets.slint";
+
+// @rust-attr(derive(serde::Deserialize, serde::Serialize))
+export struct Message {
+    id: string,
+    timestamp: string,
+    message: string,
+    name: string,
+    color: color,
+}
+
+export component ChatMessage inherits Rectangle {
+    in property <Message> data;
+
+    width: 100%;
+
+    HorizontalLayout {
+        padding-top: 2px;
+        padding-bottom: 2px;
+        spacing: 6px;
+        alignment: start;
+
+        Text {
+            text: "[" + data.timestamp + "]";
+            color: gray;
+        }
+
+        Text {
+            text: "<" + data.name + ">";
+            color: data.color;
+            font-weight: 700;
+        }
+
+        Text {
+            text: data.message;
+            color: white;
+            wrap: word-wrap;
+            horizontal-stretch: 1;
+        }
+    }
+}
+
+component ChatInput inherits Rectangle {
+    min-height: 32px;
+    border-width: 1px;
+    border-color: skyblue;
+
+    callback send_message(string);
+
+    HorizontalLayout {
+        padding: 4px;
+        spacing: 8px;
+
+        Rectangle {
+            horizontal-stretch: 1;
+            input := TextInput {
+                width: 100%;
+                height: 100%;
+                vertical-alignment: center;
+                single-line: true;
+                accepted => {
+                    root.send_message(self.text);
+                    self.text = ""
+                }
+            }
+
+            Text {
+                width: 100%;
+                height: 100%;
+                text: "Type something";
+                color: grey;
+                vertical-alignment: center;
+                visible: input.text == "";
+            }
+        }
+
+        Button {
+            text: "Send";
+            height: 24px;
+            width: 80px;
+            clicked => {
+                input.accepted();
+            }
+        }
+    }
+}
+
+export component ChatView inherits VerticalLayout {
+    height: 100%;
+    padding: 4px;
+    spacing: 4px;
+    callback send_message(string);
+
+    in property <[Message]> messages: [
+        { id: "0", timestamp: "time", message: "Ahhhhhhhhhh", name: "sucky", color: Colors.skyblue },
+        { id: "0", timestamp: "time", message: "tesy", name: "fucky", color: Colors.mediumpurple },
+        {
+            id: "0",
+            timestamp: "time",
+            message: "placeholder",
+            name: "lucky",
+            color: Colors.indianred
+        },
+        {
+            id: "0",
+            timestamp: "time",
+            message: "lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum",
+            name: "ducky",
+            color: Colors.khaki
+        },
+    ];
+
+    Rectangle {
+        border-color: skyblue;
+        border-width: 1px;
+        vertical-stretch: 1;
+        ScrollView {
+            VerticalLayout {
+                alignment: start;
+                padding: 4px;
+                for message[i] in messages: ChatMessage {
+                    data: message;
+                }
+            }
+        }
+    }
+
+    ChatInput {
+        send_message(text) => {
+            if (text != "") {
+                root.send_message(text);
+            }
+        }
+    }
+}

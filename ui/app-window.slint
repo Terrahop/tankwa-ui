@@ -1,0 +1,11 @@
+import { ChatView, Message } from "views/chat-view.slint";
+
+export component AppWindow inherits Window {
+    width: 600px;
+    height: 500px;
+
+    in-out property <[Message]> messages <=> chat_view.messages;
+    callback send_message <=> chat_view.send_message;
+
+    chat_view := ChatView { }
+}
