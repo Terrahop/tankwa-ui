@@ -1,86 +1,66 @@
-use crate::{AppWindow, ChatState, Message};
+use crate::{App, AppWindow, ChatState, Message};
 use chrono::Utc;
-use serde::{Deserialize, Serialize};
-use slint::{Color, ComponentHandle, Model, SharedString, VecModel};
-use std::{fs, rc::Rc};
+use slint::{Color, ComponentHandle, SharedString, VecModel};
+use std::rc::Rc;
 
-#[derive(Debug, Deserialize, Serialize)]
 pub struct MessageData {
-    id: String,
-    name: String,
-    message: String,
-    color: String,
-    #[serde(default)]
-    timestamp: String,
+    pub id: i8,
+    pub message: String,
+    pub time: String,
 }
 
 pub struct ChatView {
+    app: App,
     messages: Rc<VecModel<Message>>,
 }
 
 impl ChatView {
-    pub fn new(app: &AppWindow) -> Self {
-        let chatvew_global = app.global::<ChatState>();
+    pub fn new(app: App, app_window: &AppWindow) -> Rc<Self> {
+        let chatview_global = app_window.global::<ChatState>();
         let message_model = Rc::new(slint::VecModel::<Message>::default());
 
-        let messages: VecModel<Message> =
-            ChatView::read_messages("data/message.json".to_string()).unwrap();
+        chatview_global.set_messages(message_model.clone().into());
 
-        for msg in messages.iter() {
-            message_model.push(msg);
-        }
-
-        chatvew_global.set_messages(message_model.clone().into());
-
-        let controller = Self {
+        let chat_view = Rc::new(Self {
+            app,
             messages: message_model,
-        };
-        controller.init_callbacks(&app);
+        });
+        chat_view.init_callbacks(&app_window, Rc::clone(&chat_view));
 
-        controller
+        chat_view
     }
 
-    fn init_callbacks(&self, app: &AppWindow) {
+    fn init_callbacks(&self, app: &AppWindow, self_rc: Rc<Self>) {
         let chatvew_global = app.global::<ChatState>();
         let message_model = self.messages.clone();
 
         chatvew_global.on_send_message(move |text| {
-            let new_msg = Message {
-                id: "id".into(),
-                timestamp: "14:20".into(),
-                name: "You".into(),
-                message: text,
-                color: Color::from_rgb_u8(100, 200, 255),
-            };
-            message_model.push(new_msg);
+            let new_msg = self_rc.new_message(&MessageData {
+                id: 0,
+                message: text.to_string(),
+                time: ChatView::timestamp().into(),
+            });
+            if let Some(msg) = new_msg {
+                message_model.push(msg.clone());
+            }
         });
     }
 
-    pub fn timestamp() -> String {
-        Utc::now().format("%d/%m/%Y %H:%M").to_string()
-    }
-
-    pub fn read_messages(file_path: String) -> Result<VecModel<Message>, std::io::Error> {
-        println!("reading from file {}", file_path);
-        let contents = fs::read_to_string(file_path)?;
-
-        let mut messages: Vec<MessageData> = serde_json::from_str(&contents)?;
-        let slint_messages: VecModel<Message> = VecModel::default();
-
-        for msg in &mut messages {
-            slint_messages.push(Message {
-                id: SharedString::from(&msg.id),
-                message: SharedString::from(&msg.message),
-                name: SharedString::from(&msg.name),
-                timestamp: SharedString::from(ChatView::timestamp()),
-                color: ChatView::parse_color(&msg.color),
-            });
+    fn new_message(&self, message: &MessageData) -> Option<Message> {
+        if let Some(terminal) = self.app.find_terminal(message.id as i8) {
+            Some(Message {
+                id: terminal.id as i32,
+                message: SharedString::from(message.message.clone()),
+                name: SharedString::from(&terminal.name),
+                timestamp: SharedString::from(&message.time),
+                color: ChatView::parse_color(&terminal.color),
+            })
+        } else {
+            None
         }
-
-        Ok(slint_messages)
     }
 
-    pub fn parse_color(c: &str) -> Color {
+    fn parse_color(c: &str) -> Color {
         if c.starts_with('#') {
             let hex = &c[1..];
             match hex.len() {
@@ -108,5 +88,17 @@ impl ChatView {
         }
 
         Color::from_rgb_u8(0, 0, 0)
+    }
+
+    pub fn timestamp() -> String {
+        Utc::now().format("%H:%M").to_string()
+    }
+
+    pub fn add_messages(&self, messages: Vec<MessageData>) {
+        for message in messages {
+            if let Some(message) = self.new_message(&message) {
+                self.messages.push(message);
+            }
+        }
     }
 }

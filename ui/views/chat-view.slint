@@ -1,8 +1,7 @@
 import { Button, ScrollView } from "std-widgets.slint";
 
-// @rust-attr(derive(serde::Deserialize, serde::Serialize))
 export struct Message {
-    id: string,
+    id: int,
     timestamp: string,
     message: string,
     name: string,
@@ -10,7 +9,18 @@ export struct Message {
 }
 
 export global ChatState {
-    in-out property <[Message]> messages: [];
+    in-out property <[Message]> messages: [
+        { id: 0, timestamp: "time", message: "Ahhhhhhhhhh", name: "sucky", color: Colors.skyblue },
+        { id: 1, timestamp: "time", message: "tesy", name: "fucky", color: Colors.mediumpurple },
+        { id: 2, timestamp: "time", message: "placeholder", name: "lucky", color: Colors.indianred },
+        {
+            id: 3,
+            timestamp: "time",
+            message: "lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum",
+            name: "ducky",
+            color: Colors.khaki
+        },
+    ];
     callback send_message(string);
 }
 
@@ -49,6 +59,10 @@ component ChatInput inherits Rectangle {
     min-height: 32px;
     border-width: 1px;
     border-color: skyblue;
+
+    init => {
+        input.focus()
+    }
 
     HorizontalLayout {
         padding: 4px;
@@ -108,25 +122,6 @@ export component ChatView inherits VerticalLayout {
     padding: 4px;
     spacing: 4px;
     callback send_message(string);
-
-    in property <[Message]> messages: [
-        { id: "0", timestamp: "time", message: "Ahhhhhhhhhh", name: "sucky", color: Colors.skyblue },
-        { id: "0", timestamp: "time", message: "tesy", name: "fucky", color: Colors.mediumpurple },
-        {
-            id: "0",
-            timestamp: "time",
-            message: "placeholder",
-            name: "lucky",
-            color: Colors.indianred
-        },
-        {
-            id: "0",
-            timestamp: "time",
-            message: "lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum",
-            name: "ducky",
-            color: Colors.khaki
-        },
-    ];
 
     ChatMessages { }
 
