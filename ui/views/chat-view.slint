@@ -24,6 +24,43 @@ export global ChatState {
     callback send_message(string);
 }
 
+component GlowEffect inherits TouchArea {
+    // Glow properties
+    property <brush> glow-color: @linear-gradient(90deg, #00f2fe 0%, #4facfe 100%);
+    
+    width: 100px;
+    height: 100px;
+
+    // The Glowing Layer
+    Rectangle {
+        width: parent.width * 1.5;
+        height: parent.height * 1.5;
+        border-radius: self.width / 2;
+        // Radial gradient for soft glow look [13]
+        background: @radial-gradient(circle, root.glow-color 0%, transparent 70%);
+        opacity: 0.5;
+
+        // Animated fading effect [2]
+        animate opacity {
+            duration: 0.2s;
+            easing: ease-in-out;
+        }
+
+        states [
+            hover when root.has-hover : {
+                opacity: 0.8;
+            }
+        ]
+    }
+
+    // Foreground element
+    Rectangle {
+        background: #333;
+        border-radius: 5px;
+        Text { text: "Glow"; color: white; }
+    }
+}
+
 export component ChatMessage inherits Rectangle {
     in property <Message> data;
 
@@ -34,7 +71,6 @@ export component ChatMessage inherits Rectangle {
         padding-bottom: 2px;
         spacing: 6px;
         alignment: start;
-
         Text {
             text: "[" + data.timestamp + "]";
             color: gray;
@@ -90,6 +126,8 @@ component ChatInput inherits Rectangle {
                 visible: input.text == "";
             }
         }
+
+        GlowEffect {}
 
         Button {
             text: "Send";
